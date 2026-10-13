@@ -1,0 +1,68 @@
+id: google-ctf-2023-png2
+title: PNG2
+event: Google CTF 2023 Qualifiers
+category: reverse
+sourceUrl: https://github.com/google/google-ctf/tree/main/2023/quals/rev-png2
+author: Google CTF
+inputFormats:
+  - PNG2 with custom filter method 0xc0 and Hilbert interlace method 0xde
+  - zlib-compressed filtered RGB rows in PNG IDAT chunks
+steps:
+  - operationId: png.inspect
+    originalTool: Python struct and zlib (provided decrypt.py)
+    originalCommand: check PNG signature, IHDR, custom filter/interlace markers, IDAT and IEND chunks
+    inputs:
+      - reproduced flag.png2
+    outputs:
+      - 1024x1024 8-bit RGB envelope with valid chunk CRCs
+      - nonstandard PNG2 filter and interlace markers
+    workbenchCondition: Generic PNG inspection reports nonstandard IHDR methods as an unsupported PNG feature; it cannot display the custom image directly.
+  - operationId: reverse.png2.decode
+    originalTool: provided decrypt.py
+    originalCommand: inflate IDAT, undo 11 possible row filters, map Hilbert scan order back to RGB pixels, then export an image
+    inputs:
+      - reproduced flag.png2
+    outputs:
+      - complete 1024x1024 PNG showing the colored flag characters
+      - RGB pixel SHA-256 f14a58e5464f2f7d0d67e25d768200c652b1d7fd752d587c1eb5a1a57b089ffe
+    workbenchCondition: The entire decoded pixel array matches the independent output from Google's decrypt.py; PNG output compression may differ byte-for-byte.
+  - operationId: null
+    originalTool: visual examination
+    originalCommand: read colored characters from the decoded image
+    inputs:
+      - reconstructed flag image
+    outputs:
+      - challenge flag
+    workbenchCondition: The text is part of image pixels and is read visually; the regression checks every pixel against the official decoder. The full flag is not yet read automatically.
+  - operationId: image.color-contrast.crop
+    originalTool: pixel colour isolation before OCR (Workbench follow-up)
+    originalCommand: crop the independently decoded PNG at x=320,y=215,width=390,height=180 and isolate RGB contrast above 120
+    inputs:
+      - reconstructed flag image
+    outputs:
+      - black-on-white BMP containing chromatic flag-prefix pixels
+    workbenchCondition: The crop is derived from decoded pixels, with a bounded ROI and threshold; it does not embed or return the flag text.
+  - operationId: ocr.recognize
+    originalTool: Tesseract (optional OCR follow-up, not part of the official solver)
+    originalCommand: run sparse English OCR with a restricted character set on the decoded PNG
+    inputs:
+      - reconstructed flag image
+    outputs:
+      - recovered document headings and technical terms, including Table of contents and Hilbert curve order
+    workbenchCondition: OCR recognizes document text on the full image and reads CTF{ from the cropped colour-contrast image with a line layout and 2x scale. It does not recover the remaining flag characters or replace visual verification of the puzzle solution.
+verification:
+  pattern: '^CTF\{0cc4sion4lly_PNG2_is_actuAlly_5m4ll3r\}$'
+  intermediate:
+    - CRC-valid 1024x1024 custom PNG2 chunk envelope
+    - decoded RGB pixels match the supplied image and Google's reference decoder exactly
+    - decoding leaves the supplied PNG2 input bytes unchanged, as checked by SHA-256 before and after reconstruction
+    - a color-contrast crop followed by offline OCR reads the CTF{ prefix, but not the complete flag
+fixture:
+  usable: true
+  inputs:
+    - src/formats/testing/google-ctf-2023-reproduced.png2
+  test: src/formats/png2.test.ts
+  license: Apache-2.0
+  licenseFile: corpus/LICENSE.google-ctf.apache-2.0.txt
+  attribution: Copyright 2023 Google LLC; reproduced using Google's licensed flag.png, png2.c and crc.inc.
+  provenance: Generated from challenge/flag.png as P3 PPM with png2.c built using -DFULLSIZE, then independently decoded with challenge/decrypt.py. The repo does not contain an original released flag.png2 to compare encoded bytes.

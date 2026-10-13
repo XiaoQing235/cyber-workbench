@@ -1,0 +1,44 @@
+id: google-ctf-2024-auxin2
+title: auxin2
+event: Google CTF 2024 Qualifiers
+category: reverse
+sourceUrl: https://github.com/google/google-ctf/tree/main/2024/quals/misc-auxin2
+author: Google CTF
+inputFormats:
+  - original 208-byte Uxn ROM auxin2.rom
+  - healthcheck's 100-byte lowercase-hex Uxn payload
+steps:
+  - operationId: reverse.uxn.auxin2
+    originalTool: provided auxin2.tal and run.py
+    originalCommand: read the low-nibble filter and check the server's 112-byte hex-input budget
+    inputs:
+      - original auxin2.rom
+      - published healthcheck payload
+    outputs:
+      - Uxn shellcode entry at 0x01d0
+      - forbidden low nibbles 0, 2, 3, 6, 7, e
+      - 100-byte healthcheck payload with no forbidden low nibbles
+    workbenchCondition: The original ROM Git blob is checked and the exact instruction bytes for six forbidden-nibble comparisons are validated. The healthcheck payload is attributed to the published healthcheck.py; its static filter acceptance is not execution of Uxn or proof that the challenge server prints the flag.
+  - operationId: null
+    originalTool: uxncli and challenge service
+    originalCommand: execute the filtered payload, read the server-side flag file and print it
+    inputs:
+      - Uxn ROM and healthcheck payload
+      - server-side flag file
+    outputs:
+      - final flag
+    workbenchGap: Uxn VM and payload execution are not implemented; the server-side flag file is not read or reproduced by the static operation.
+verification:
+  pattern: '^CTF\{Sorry__n0_Music_thi5_t1m3\}$'
+  intermediate:
+    - original ROM is 208 bytes, Git blob 24b36d8c300b55eda14d3d53535a1c7cee048a41
+    - healthcheck payload has 100 bytes and SHA-256 2aca9e138c9d4a81f123b64c8470222d2c7fbe823e897c5aad124309cf111846
+fixture:
+  usable: true
+  inputs:
+    - src/formats/testing/google-ctf-2024-auxin2.rom
+  test: src/formats/uxnAuxin.test.ts
+  license: Apache-2.0
+  licenseFile: corpus/LICENSE.google-ctf.apache-2.0.txt
+  attribution: Copyright 2024 Google LLC; original Google CTF player ROM, provided source and healthcheck payload.
+  provenance: The ROM is byte-identical to the original player attachment. The payload is the published healthcheck input. Neither is a recovered flag; only fixed ROM constraints and payload length/byte compatibility are verified.

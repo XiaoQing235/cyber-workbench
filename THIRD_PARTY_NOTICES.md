@@ -1,0 +1,18 @@
+# Runtime pack distribution notices
+
+The optional Wiregasm and threaded FFmpeg packs include prebuilt WebAssembly programs whose installed npm packages declare `GPL-2.0-or-later`. A verbatim copy of GPL version 2 is distributed at [public/licenses/GPL-2.0.txt](public/licenses/GPL-2.0.txt), linked in the Runtime packs panel and available from the offline application cache.
+
+| Pack | Installed package | Declared licence | Upstream source reference |
+| --- | --- | --- | --- |
+| Wiregasm (Wireshark) | `@goodtools/wiregasm@2.0.0` | GPL-2.0-or-later | [v2.0.0](https://github.com/good-tools/wiregasm/tree/881f5303a6836d8b23b5cc4982ff2b9ef746ec01) (matches npm `gitHead`) |
+| Threaded FFmpeg core | `@ffmpeg/core-mt@0.12.10` | GPL-2.0-or-later | [npm `gitHead` 63ea4ccb](https://github.com/ffmpegwasm/ffmpeg.wasm/tree/63ea4ccb6c58e127cc1767f88c508371936178c2) |
+
+The `@ffmpeg/ffmpeg@0.12.15` JavaScript wrapper declares MIT. Other Runtime pack licences and source links are listed in the application's Runtime packs panel.
+
+**Technical source trace (not a compliance sign-off):** The package-lock npm SHA-512 integrities are `sha512-pAt6nckRGu8A1EDO0c0n6sXDtIZGLAWDdeeKiQDwtFxOP1RvKmyNE3okFKJkC9ex0/x2afuvYYMGWJCxepku/w==` for Wiregasm and `sha512-atyRTOpa58bLCIgd6GXBZAXWyWD3AUoQyzxqjvGhp9MuSzdILtOTI62ffLswBsCnLq15lQ8IETHUpm1oe4V9FQ==` for FFmpeg core-mt. The installed Wiregasm `.wasm` SHA-256 is `1f97c61b58dd20d405e14dcd8da3acac18fa2e899998aba013d1ebc222ac2cb9`; both installed FFmpeg ESM and UMD `.wasm` files hash to `be2c97605366b78f3f13e21b52e81a55a79e1f29c133b03a68ec187b1a2ec41a`.
+
+Wiregasm's tagged [Makefile](https://github.com/good-tools/wiregasm/blob/881f5303a6836d8b23b5cc4982ff2b9ef746ec01/Makefile) uses Emscripten 6.0.11, Wireshark 4.6.9 (see `mk/deps/wireshark.mk`), eight other dependency recipes, and upstream modifications under `patches/` and `overlay/`. FFmpeg core-mt is built through the pinned [Makefile](https://github.com/ffmpegwasm/ffmpeg.wasm/blob/63ea4ccb6c58e127cc1767f88c508371936178c2/Makefile), [Dockerfile](https://github.com/ffmpegwasm/ffmpeg.wasm/blob/63ea4ccb6c58e127cc1767f88c508371936178c2/Dockerfile) and `build/` scripts, using `emscripten/emsdk:3.1.40`, FFmpeg `n5.1.4` and separately fetched codec libraries. The previously cited FFmpeg commit `71aa99d` contained matching package metadata but is **not** the npm-reported `gitHead` for `0.12.10`.
+
+The on-demand UnityFS reader `unity-asset-reader@1.0.1` and its `fflate@0.8.3` / `lzma1@0.3.0` dependencies declare MIT. The two included Unity 2019.4.41f2 sample bundles were built by that project's own Unity fixture project at [commit 0d3d4db](https://github.com/fatal10110/texture2ddecoder-wasm/tree/0d3d4db/fixtures); their licence text is bundled at [corpus/LICENSE.unity-reader.MIT.txt](corpus/LICENSE.unity-reader.MIT.txt). These fixture rights do not extend to arbitrary third-party games.
+
+**Release gate:** The npm packages ship `dist/` artifacts, not complete corresponding source. These upstream references and hashes do not prove that the exact distributed `.wasm`/worker builds can be reproduced from those commits or that all dependency sources, modifications, build scripts and required notices are available to recipients. Obtain the complete exact-build source and a compliant distribution method, verify binary/source correspondence, and record approval from the licence owner/legal reviewer before public distribution. Keep this gate open until that review is recorded.

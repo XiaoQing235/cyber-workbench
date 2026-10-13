@@ -1,0 +1,57 @@
+id: google-ctf-2023-npc
+title: NPC
+event: Google CTF 2023 Qualifiers
+category: crypto
+sourceUrl: https://github.com/google/google-ctf/tree/main/2023/quals/misc-npc
+author: Google CTF
+inputFormats:
+  - original labeled undirected DOT hint graph
+  - scrypt-encrypted age file secret.age
+steps:
+  - operationId: crypto.graph.npc-hint-verify
+    originalTool: official solver.py graph and dictionary search
+    originalCommand: find a distinct-node Hamiltonian path whose labels spell the candidate password
+    inputs:
+      - challenge/hint.dot
+      - candidate standardwatersigngivenchosen, published in the official solution
+    outputs:
+      - 28 distinct nodes visited through 27 adjacent edges
+      - original graph has 103 edge declarations including duplicates
+    workbenchCondition: The bounded operation finds a complete path after 53 states from the original hint; it verifies graph consistency of a supplied candidate, not password correctness or independent password discovery.
+  - operationId: crypto.graph.npc-discover
+    originalTool: official solver.py full word-list search
+    originalCommand: find the password from USACONST.TXT and hint.dot without consulting the published solution
+    inputs:
+      - challenge/USACONST.TXT
+      - challenge/hint.dot
+    outputs:
+      - bounded graph-valid password candidates including standardwatersigngivenchosen
+    workbenchCondition: From the original dictionary and hint alone, a million-state graph-trie search finds the password among candidates; the search is truncated and does not establish uniqueness. Supplying the original age ciphertext as optional hex also authenticates a candidate within 16 attempts in the same browser operation.
+  - operationId: crypto.age.passphrase-decrypt
+    originalTool: pyrage.passphrase
+    originalCommand: decrypt challenge/secret.age using the candidate password
+    inputs:
+      - original challenge/secret.age
+      - candidate independently discovered from the original dictionary and graph
+    outputs:
+      - authenticated plaintext CTF{S3vEn_bR1dg35_0f_K0eN1g5BeRg}
+    workbenchCondition: The original 215-byte age file authenticates a discovered graph-valid candidate at bounded scrypt work factor 19, and its exact plaintext matches the archived flag.
+verification:
+  pattern: '^CTF\{S3vEn_bR1dg35_0f_K0eN1g5BeRg\}$'
+  intermediate:
+    - original hint.dot Git blob dfa0002d37492e277a82f4b4fd1ebe85f8b2ef3f
+    - the original USACONST.TXT contains 1087 distinct words, 259 compatible with the graph letter counts
+    - bounded discovery yields graph-valid candidates including standardwatersigngivenchosen; the search is not exhaustive
+    - a single pack-free browser run using only hint.dot, USACONST.TXT and secret.age reproduces the original flag in Chromium, Firefox and WebKit
+    - original secret.age SHA-256 6d816411e3b738f8bc2cc508fdde3a4fc50dca5dc778cec7f2bc6b209c9b7512 decrypts to the published flag
+fixture:
+  usable: true
+  inputs:
+    - src/formats/testing/google-ctf-2023-npc-hint.dot
+    - src/formats/testing/google-ctf-2023-npc-USACONST.TXT
+    - src/formats/testing/google-ctf-2023-npc-secret.age
+  test: src/formats/npcDiscovery.test.ts
+  license: Apache-2.0
+  licenseFile: corpus/LICENSE.google-ctf.apache-2.0.txt
+  attribution: Copyright 2023 Google LLC; original Google CTF hint.dot, USACONST.TXT, secret.age, official solution and README.md.
+  provenance: All three inputs are byte-identical to the published attachments (dictionary SHA-256 f450b57276f4c4a5f52f918062ffb710aa7a29add67b38014be2ea01c08ef95b). The published solution's passphrase is an expected result, not an input to the discovery or decryption loop.

@@ -1,0 +1,34 @@
+id: google-ctf-2022-appnote
+title: APPNOTE.TXT
+event: Google CTF 2022 Qualifiers
+category: forensics
+sourceUrl: https://github.com/google/google-ctf/tree/main/2022/quals/misc-appnote
+author: Google CTF
+inputFormats:
+  - original dump.zip with multiple EOF-anchored end-of-central-directory records hidden inside ZIP comments
+steps:
+  - operationId: archive.zip.eocd-chain
+    originalTool: Python struct parsing (official annotate.py)
+    originalCommand: enumerate end records whose comments reach EOF, validate each referenced stored central/local file and CRC, then join flagNN payloads in numeric order
+    inputs:
+      - dump.zip from the official player attachments
+    outputs:
+      - 21 CRC-verified single-entry end records
+      - 19 recovered flagNN bytes in order
+      - CTF{p0s7m0d3rn_z1p}
+    workbenchCondition: The exact candidate matches the original challenge metadata flag; the operation marks it unverified until compared to that external reference.
+verification:
+  pattern: '^CTF\{p0s7m0d3rn_z1p\}$'
+  intermediate:
+    - The original 61594-byte ZIP contains 21 EOF-anchored end records with individually matching central and local fields and valid stored CRCs.
+    - The 19 contiguous flag00 through flag18 entries concatenate to the published metadata flag.
+    - Tampering with a selected entry prevents the operation from returning a complete candidate.
+fixture:
+  usable: true
+  inputs:
+    - src/formats/testing/google-ctf-2022-appnote.zip
+  test: src/operations/archive.test.ts
+  license: Apache-2.0
+  licenseFile: corpus/LICENSE.google-ctf.apache-2.0.txt
+  attribution: Copyright 2022 Google LLC; original Google CTF 2022 Qualifiers APPNOTE.TXT attachment, metadata and make_zip.py generator.
+  provenance: The player ZIP is byte-identical to the official attachment (SHA-256 d6f941e8633906b8e6299ee5756ad4579c55078ac34a1ab55651c8794cf0b902). Its flag matches metadata.yaml and make_zip.py; the separate make_long_zip.py uses a different sample flag and is not the released attachment.

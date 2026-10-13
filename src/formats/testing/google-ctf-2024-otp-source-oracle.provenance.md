@@ -1,0 +1,6 @@
+# Google CTF 2024 OTP published-source replay oracle
+
+- Player input: original `attachments/encrypted/2nd00.png` (Git blob `fa833e5853e39d403d3aa50c340b63f6e7f9e3d5`), already stored as `google-ctf-2024-otp-2nd00.png`.
+- Reference from the **challenge source**, not a player attachment: `challenge/recovered.key` (Git blob `bd06a25c98cbc8bb33972ff8a0ee0597ba906604`) and `challenge/recovered/2nd00.png` (Git blob `6b3f6308a1c0e1390f47a2483dff110a700d765f`) at <https://github.com/google/google-ctf/tree/main/2024/quals/crypto-otp/challenge>.
+- The licensed `otp.py` writes encryption pixels as `new[i] = old[perm[i]]`; the source-published recovered map is supplied to `image.permutation.replay` in its forward mode. `src/formats/pixelPermutation.test.ts` verifies all 4096 RGBA pixels against the separately published recovered PNG, inverse replay restores the encrypted pixels, and a changed map does not match. PNG compression bytes need not match.
+- Copyright 2024 Google LLC, Apache-2.0 (`corpus/LICENSE.google-ctf.apache-2.0.txt`). This **verifies replay against a source-published key**; it does not recover that key from player ciphertexts, establish that the bounded swap search converges, or read the flag.

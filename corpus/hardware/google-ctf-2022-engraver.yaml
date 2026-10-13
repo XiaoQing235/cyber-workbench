@@ -1,0 +1,43 @@
+id: google-ctf-2022-engraver
+title: engraver
+event: Google CTF 2022 Qualifiers
+category: hardware
+sourceUrl: https://github.com/google/google-ctf/tree/main/2022/quals/hardware-engraver
+author: Google CTF
+inputFormats:
+  - original engraver.pcapng USBPcap capture with LewanSoul robot servo commands
+steps:
+  - operationId: hardware.usb.engraver-trace
+    originalTool: USBPcap and serial protocol decoding
+    originalCommand: select host-to-device bulk writes, decode six servo positions and durations, and plot servo-2/3 movement while servo 1 enables the laser
+    inputs:
+      - engraver.pcapng from the official challenge attachments
+    outputs:
+      - 418 servo writes from 860 captured USB frames
+      - 30 laser-on and 46 laser-off commands with 101 projected motion segments
+      - 2D servo-axis projection as a BMP image
+    workbenchCondition: Original-frame and servo counts agree with independent Scapy extraction. The BMP is only a servo-axis projection, not physical arm-endpoint positions or a verified flag.
+  - operationId: null
+    originalTool: robot-arm geometry and visual analysis
+    originalCommand: reconstruct the six-axis laser engraving and read its message in uppercase
+    inputs:
+      - servo position timeline and physical arm geometry
+    outputs:
+      - independently recovered challenge flag
+    workbenchGap: Physical arm geometry and full engraving/flag recovery are not implemented. The source generator embeds a mixed-case flag, but that is not evidence of recovery from the player capture.
+verification:
+  pattern: '^CTF\{6_D3GREES_OF_FR3EDOM\}$'
+  intermediate:
+    - The original 79008-byte USBPcap capture has 860 frames and 418 recognized servo commands.
+    - Independent packet parsing yields servo counts 76, 118, 95, 43, 43, 43 for IDs 1 through 6.
+    - Laser servo 1 receives 30 on-position commands at 2400 and 46 off-position commands at 2300.
+    - The servo-2/3 projection contains 101 laser-on motion segments and does not spell the complete flag.
+fixture:
+  usable: true
+  inputs:
+    - src/formats/testing/google-ctf-2022-engraver.pcapng
+  test: src/operations/labs.test.ts
+  license: Apache-2.0
+  licenseFile: corpus/LICENSE.google-ctf.apache-2.0.txt
+  attribution: Copyright 2022 Google LLC; original Google CTF 2022 Qualifiers engraver capture, generator and metadata.
+  provenance: The capture is byte-identical to the published player attachment (SHA-256 7eff7c6c7aaed582054076e0cc1c8353b39d7135f881834ff3688afba35378b4). Packet/servo counts were independently measured with Scapy; no flag claim is made from those observations.

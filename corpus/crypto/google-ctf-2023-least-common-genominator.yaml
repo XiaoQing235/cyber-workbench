@@ -1,0 +1,53 @@
+id: google-ctf-2023-least-common-genominator
+title: Least Common Genominator?
+event: Google CTF 2023 Qualifiers
+category: crypto
+sourceUrl: https://github.com/google/google-ctf/tree/main/2023/quals/crypto-lcg
+author: Google CTF
+inputFormats:
+  - exact decimal LCG outputs (dump.txt)
+  - RSA public key (public.pem)
+  - padded little-endian RSA ciphertext (flag.txt)
+steps:
+  - operationId: crypto.prng.lcg-unknown
+    originalTool: Python modular arithmetic (official solution)
+    originalCommand: derive a modulus candidate by GCD of difference determinants, then invert the first difference to infer the multiplier and increment
+    inputs:
+      - six consecutive outputs in dump.txt
+    outputs:
+      - 512-bit LCG modulus candidate, multiplier, increment, and predicted output
+    workbenchCondition: The candidate replays all six outputs; finite observations do not prove the generator is unique.
+  - operationId: crypto.rsa.public-key.inspect
+    originalTool: OpenSSL or Python RSA parser
+    originalCommand: extract the 4090-bit modulus and exponent 65537 from public.pem
+    inputs:
+      - public.pem
+    outputs:
+      - independently known RSA public modulus and exponent
+    workbenchCondition: WebCrypto imports the original SPKI PEM; the regression compares its 4090-bit modulus and exponent to an independent Node public-key parse and the reconstructed RSA key.
+  - operationId: crypto.prng.lcg-rsa-reconstruct
+    originalTool: Python Crypto.Util.number.isPrime and modular exponentiation
+    originalCommand: rewind the LCG, select eight 512-bit prime states, reconstruct RSA, and decrypt flag.txt as a little-endian integer
+    inputs:
+      - recovered LCG parameters and first dump output
+      - flag.txt
+    outputs:
+      - eight probable primes and RSA public modulus
+      - decrypted flag
+    workbenchCondition: Bounded to 20,000 states; probable-prime testing is not a proof of primality.
+verification:
+  pattern: '^CTF\{C0nGr@tz_RiV35t_5h4MiR_nD_Ad13MaN_W0ulD_b_h@pPy\}$'
+  intermediate:
+    - all six outputs reproduce the inferred 512-bit LCG candidate and predict the next state
+    - eight prime states found by iteration 13,047
+    - product of probable primes exactly equals the 4090-bit public.pem modulus
+fixture:
+  usable: true
+  inputs:
+    - src/formats/testing/google-ctf-2023-lcg-dump.txt
+    - src/formats/testing/google-ctf-2023-lcg-public.pem
+    - src/formats/testing/google-ctf-2023-lcg-flag.bin
+  test: src/formats/lcg.test.ts
+  license: Apache-2.0
+  licenseFile: corpus/LICENSE.google-ctf.apache-2.0.txt
+  attribution: Copyright 2023 Google LLC; original Google CTF challenge attachments.

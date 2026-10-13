@@ -1,0 +1,49 @@
+id: davincictf-2025-golden-scarab
+title: Golden Scarab
+event: DaVinciCTF 2025
+category: hardware
+sourceUrl: https://hippie.cat/post/Writeup/DaVinciCTF2025/golden-scarab
+author: Hippie
+inputFormats:
+  - live STM32 GPIO from the DVID board
+  - DVID board schematic PDF
+steps:
+  - operationId: null
+    originalTool: board schematics and physical probes
+    originalCommand: identify PB10, PB11, PA6 and PA7, then connect a logic analyzer
+    inputs:
+      - schematic PDF
+      - physical board
+    outputs:
+      - GPIO channels to sample
+  - operationId: null
+    originalTool: Saleae Logic timing measurement
+    originalCommand: measure two opposite-state bit transitions and take the reciprocal
+    inputs:
+      - recorded GPIO transitions
+    outputs:
+      - measured 1.486 kHz, configured as 1500 bit/s
+  - operationId: hardware.vcd.uart
+    originalTool: Saleae Logic UART analyzer
+    originalCommand: configure UART at 1500 bit/s
+    inputs:
+      - recorded GPIO channel
+    outputs:
+      - decoded UART bytes
+    workbenchCondition: Requires captured waveform data, either VCD or Saleae Logic 2 digital CSV converted with hardware.saleae.digital-import, and bitTicks calculated from the VCD timescale. The public write-up provides no raw export.
+  - operationId: hardware.vcd.manchester
+    originalTool: Saleae Logic Manchester analyzer
+    originalCommand: configure Manchester at the measured bit rate
+    inputs:
+      - recorded GPIO channel
+    outputs:
+      - decoded Manchester bytes
+    workbenchCondition: Requires captured waveform data, either VCD or converted Saleae digital CSV, start tick, bitTicks and a verified bit convention. The public write-up provides no raw export.
+verification:
+  pattern: '^DVCTF\{[^}]+\}$'
+  intermediate:
+    - measured bit rate 1.486 kHz, approximately 1500 bit/s
+    - data decoded with both UART and Manchester analyzers
+fixture:
+  usable: false
+  reason: Physical DVID board and screenshots are described, but no waveform capture is offered; redistribution rights for the linked schematic and images are not established.

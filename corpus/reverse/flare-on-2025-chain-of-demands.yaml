@@ -1,0 +1,83 @@
+id: flare-on-2025-chain-of-demands
+title: Chain of Demands
+event: FLARE-On 12 (2025)
+category: reverse
+sourceUrl: https://minh-ton.dev/posts/flare-on-12-write-up-6-chain-of-demands/
+author: Minh Ton
+inputFormats:
+  - Linux x86-64 PyInstaller ELF executable
+  - JSON chat log extracted from the executable
+steps:
+  - operationId: reverse.pyinstaller.inspect
+    originalTool: file, readelf, and pyinstxtractor-ng
+    originalCommand: inspect chat_client and find the appended PyInstaller archive
+    inputs:
+      - chat_client ELF executable
+    outputs:
+      - PyInstaller CArchive inventory and embedded Python version
+  - operationId: reverse.pyinstaller.extract
+    originalTool: pyinstxtractor-ng
+    originalCommand: python pyinstxtractor_ng.py chat_client
+    inputs:
+      - chat_client ELF executable
+    outputs:
+      - challenge_to_compile script entry
+      - chat_log.json data entry
+    workbenchCondition: Extract one named entry at a time; no bulk extraction or arbitrary code execution.
+  - operationId: reverse.pyinstaller.pyc-rebuild
+    originalTool: pyinstxtractor-ng
+    originalCommand: recover challenge_to_compile.pyc from the marshaled script
+    inputs:
+      - PyInstaller script entry
+    outputs:
+      - Python 3.12 .pyc with a synthetic header
+    workbenchCondition: Header timestamp and source size are not recovered; they are explicitly synthetic.
+  - operationId: reverse.python.pyc.inspect
+    originalTool: file and Python bytecode tooling
+    originalCommand: identify the recovered Python bytecode version
+    inputs:
+      - challenge_to_compile.pyc
+    outputs:
+      - Python 3.12 bytecode envelope and raw marshal offset
+  - operationId: null
+    originalTool: Decompyle++
+    originalCommand: pycdc challenge_to_compile.pyc > challenge.py
+    inputs:
+      - challenge_to_compile.pyc
+    outputs:
+      - partially decompiled challenge.py
+    workbenchGap: Bytecode extraction is supported; offline decompilation of Python 3.12 marshal is not included.
+  - operationId: crypto.prng.lcg-xor-transcript
+    originalTool: Python scripts
+    originalCommand: XOR known plaintext, timestamps, and ciphertexts to recover the LCG output sequence
+    inputs:
+      - chat_log.json
+      - recovered algorithm structure
+    outputs:
+      - seven exact decimal LCG outputs
+    workbenchCondition: Accepts strict JSON with 32-byte LCG-XOR ciphertexts, zero-padded known plaintext and big-endian time; RSA-mode rows are skipped without decrypting them.
+  - operationId: crypto.prng.lcg-unknown
+    originalTool: Python and Sage scripts
+    originalCommand: derive the unknown modulus by GCD of output differences, then infer multiplier and increment
+    inputs:
+      - seven exact decimal LCG outputs
+    outputs:
+      - candidate 256-bit modulus, multiplier, increment, and predicted states
+    workbenchCondition: Accepts 6 to 64 exact decimal outputs, validates their recurrence, and reports the modulus as a candidate rather than a unique proof.
+  - operationId: crypto.prng.lcg-rsa-reconstruct
+    originalTool: Python and Sage scripts
+    originalCommand: derive RSA primes from the recovered LCG state and decrypt two ciphertexts
+    inputs:
+      - LCG parameters and encrypted chat log
+    outputs:
+      - plaintext containing the final email-style flag
+    workbenchCondition: Supply exact decimal LCG parameters and first output plus 1-4 little-endian ciphertexts; select 256-bit candidates, eight probable primes, and an iteration cap. The original challenge ELF is not available as a regression fixture.
+verification:
+  pattern: '^[A-Za-z0-9_]+@flare-on\.com$'
+  intermediate:
+    - CArchive contains challenge_to_compile and chat_log.json entries
+    - reconstructed script is Python 3.12 bytecode
+    - known plaintext and seven ciphertexts expose LCG outputs before RSA messages
+fixture:
+  usable: false
+  reason: The public write-up describes the challenge ELF but does not grant redistribution of its binary; locally generated PyInstaller archives test the same format separately.

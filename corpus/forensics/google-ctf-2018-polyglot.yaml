@@ -1,0 +1,62 @@
+id: google-ctf-2018-polyglot
+title: polyglot
+event: Google CTF 2018 Finals
+category: forensics
+sourceUrl: https://github.com/google/google-ctf/tree/main/2018/finals/misc-polyglot
+author: Google CTF
+inputFormats:
+  - original first.zip with three unencrypted files
+  - original second.zip with three unencrypted files
+steps:
+  - operationId: archive.zip.inspect
+    originalTool: unzip and Python ZIP parser
+    originalCommand: enumerate the two supplied ZIP central directories and identify the shared header.txt name
+    inputs:
+      - first.zip
+      - second.zip
+    outputs:
+      - first.zip names header.txt, pao_de_queijo.txt, picanha.txt
+      - second.zip names arepa.txt, cachapa.txt, header.txt
+    workbenchCondition: Both original input archives yield exactly three entries, with a shared header.txt name.
+  - operationId: archive.zip.extract-plain
+    originalTool: unzip
+    originalCommand: extract all six files from the original archives with size and CRC validation
+    inputs:
+      - both inspected ZIPs
+    outputs:
+      - six CRC-verified payloads, including identical 24-byte header.txt contents
+    workbenchCondition: Every extracted payload SHA-256 matches the independently unpacked original; four challenge files are 32768 bytes each.
+  - operationId: archive.zip.polyglot-compose
+    originalTool: challenge solution's ZIP local-header and Unicode-comment surgery
+    originalCommand: build one ZIP whose local and central records cause two different extractors to produce their respective input sets
+    inputs:
+      - a generated wrapper ZIP containing byte-identical original first.zip and second.zip
+    outputs:
+      - a 131881-byte polyglot matching the archived solution's binary output
+    workbenchCondition: The full output SHA-256 matches the independently run official builder; 7zz cleanly extracts the first input set, and unzip emits the second input set with matching payload hashes but reports structural errors and exits 3.
+  - operationId: null
+    originalTool: independent archive extractors and original challenge checker
+    originalCommand: confirm both recipients accept the same ZIP without structural errors and return the released flag
+    inputs:
+      - constructed polyglot ZIP
+    outputs:
+      - two cleanly accepted file sets and released flag
+    workbenchGap: The published construction causes unzip to return status 3 despite extracting the correct second-set bytes; no clean second-extractor acceptance or original challenge receipt verifies the released flag.
+verification:
+  pattern: '^CTF\{sereno-tranquilo-mar-azul-de-abril\}$'
+  intermediate:
+    - Original ZIP SHA-256 values are ab2905a5bc5253f6c43c255b0510e887c8f3c318e25b7e2aa1f007927f10f40e and f74f5d732678a488f9e8110f44eea4e7da0dbb4a0057758baf4a338b0daa2481.
+    - The two header.txt entries contain identical 24-byte command orders.
+    - All six original entry payload hashes agree with the system unzip reference.
+    - The composed ZIP exactly matches the original solution reference SHA-256 4f5ba114e256b371bf3d0ed252d12f7151365bccdfac9f80ca0df2b7a388ebb9.
+fixture:
+  usable: true
+  inputs:
+    - src/formats/testing/google-ctf-2018-polyglot-first.zip
+    - src/formats/testing/google-ctf-2018-polyglot-second.zip
+    - src/formats/testing/google-ctf-2018-polyglot-pair.zip
+  test: src/operations/archive.test.ts
+  license: Apache-2.0
+  licenseFile: corpus/LICENSE.google-ctf.apache-2.0.txt
+  attribution: Copyright 2018 Google LLC; original Google CTF 2018 Finals polyglot player attachments and official solution.
+  provenance: Both player ZIPs are byte-identical to the official archives. The pair ZIP is a derived stored wrapper containing those exact files (SHA-256 66ddda229b3b8eef0b6425b2aef9e82b0ddd5a158bdf3b0358d4e516dc97e4b4). The composer reproduces the published solution binary exactly; 7zz extracts the first set with exit 0, while unzip extracts the second set with matching hashes but exit 3, so challenge acceptance is not claimed.

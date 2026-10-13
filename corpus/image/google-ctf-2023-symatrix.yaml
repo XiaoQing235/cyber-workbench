@@ -1,0 +1,34 @@
+id: google-ctf-2023-symatrix
+title: Symatrix
+event: Google CTF 2023 Qualifiers
+category: image
+sourceUrl: https://github.com/google/google-ctf/tree/main/2023/quals/misc-symatrix
+author: Google CTF
+inputFormats:
+  - original 1546x1020 PNG with mirrored pixel pairs
+steps:
+  - operationId: image.symatrix.decode
+    originalTool: provided Python decoder.py and Pillow
+    originalCommand: walk rows, compare each left pixel to its right-side mirror, append the blue-channel delta for differing pairs, then decode binary bytes
+    inputs:
+      - challenge/symatrix.png
+    outputs:
+      - 272-bit mirrored-pixel bitstream
+      - CTF{W4ke_Up_Ne0+Th1s_I5_Th3_Fl4g!}
+    workbenchCondition: A bounded PNG decoder requires an intact CRC-valid 8-bit RGB/RGBA PNG and binary blue deltas, yielding the complete candidate from 272 differing pixel pairs. The original player PNG hash and output are checked against the independent official solution and metadata flag; the operation itself marks the flag unverified.
+verification:
+  pattern: '^CTF\{W4ke_Up_Ne0\+Th1s_I5_Th3_Fl4g!\}$'
+  intermediate:
+    - original PNG Git blob 72cac9a514a475e1be32864a1a31bf0115cbccbe
+    - dimensions 1546x1020 and 272 mirrored-pixel differences
+    - all 272 blue deltas form 34 UTF-8 bytes matching the published flag
+    - a separately CRC-valid PNG with a mirrored blue delta of 2 is rejected rather than interpreted as a bit
+fixture:
+  usable: true
+  inputs:
+    - src/formats/testing/google-ctf-2023-symatrix.png
+  test: src/formats/symatrix.test.ts
+  license: Apache-2.0
+  licenseFile: corpus/LICENSE.google-ctf.apache-2.0.txt
+  attribution: Copyright 2023 Google LLC; original Google CTF challenge/symatrix.png and official solution/decoder.py.
+  provenance: The PNG is byte-identical to the challenge attachment; the expected text is independently published in metadata.yaml, not embedded in the operation.

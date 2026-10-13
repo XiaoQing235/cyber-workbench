@@ -1,0 +1,67 @@
+id: google-ctf-2024-otp
+title: OTP
+event: Google CTF 2024 Qualifiers
+category: crypto
+sourceUrl: https://github.com/google/google-ctf/tree/main/2024/quals/crypto-otp
+author: Google CTF
+inputFormats:
+  - 64x64 RGBA PNG images permuted with a shared pixel-position key
+  - Python permutation generator (otp.py)
+steps:
+  - operationId: png.inspect
+    originalTool: Pillow Image.open
+    originalCommand: open two encrypted PNG images and check image size, mode, integrity and sample pixels
+    inputs:
+      - encrypted/2nd00.png
+      - encrypted/2nd01.png
+    outputs:
+      - two valid 64x64 RGBA images with matching pixel counts
+      - Pillow-matched RGBA pixels at three fixed coordinates in each image
+    workbenchCondition: The registered inspector validates PNG structure, dimensions, CRCs and IDAT size; the image decoder test independently checks the RGBA samples.
+  - operationId: image.permutation.replay
+    originalTool: otp.py (provided generator)
+    originalCommand: permute each image with the same position key; the key is not included with the player attachments
+    inputs:
+      - original pictures and a shared key file
+    outputs:
+      - shuffled PNG pixel arrays
+    workbenchCondition: Applies or reverses a supplied 4096-position map on either original PNG and validates that every pixel is mapped exactly once. The source-published recovered.key (not a player attachment) now replays original 2nd00.png to every RGBA pixel of the independently published challenge/recovered/2nd00.png; inverse replay restores the encrypted pixels. Replay does not recover the key from player inputs or prove the released flag.
+  - operationId: image.permutation.improve
+    originalTool: challenge/solve.py (official solution)
+    originalCommand: greedily swap pixel positions across the encrypted image set to reduce adjacent-pixel color differences over millions of bounded iterations
+    inputs:
+      - all encrypted PNG images
+    outputs:
+      - candidate unpermuted PNG and neighboring-pixel error score
+    workbenchCondition: ZIPs of 2–64 original 64x64 RGBA images are supported with a seeded limit of 100,000 swaps per cancellable batch and ten million cumulative attempts. Both the 24-image subset and the full 64-image 2nd00.png–2nd63.png package of original challenge PNGs reproduce bounded score improvement, export a candidate position map, support selecting which candidate PNG to output, and resume from the same map/seed with an explicit prior-attempt count; the full ten-million-attempt reconstruction and flag have not been verified.
+verification:
+  pattern: '^CTF\{I_THOUGHT_OTP_WAS_SECURE\}$'
+  intermediate:
+    - the two original images are 64x64 RGBA with intact PNG chunks
+    - fixed decoded RGBA samples match independent Pillow readback
+    - the joint adjacency score starts at 323017296 and decreases after bounded shared swaps
+    - a separate package of 24 original 2nd00.png through 2nd23.png images accepts 2,000 seeded swaps and lowers the joint score without claiming key or flag recovery
+    - the seeded search exports a 4096-position bijective candidate map; inverse replay produces the candidate first image, and applying the forward map restores original decoded pixels on both first and second challenge images
+    - choosing image index 1 from the same 24-image seeded search returns the candidate second image, byte-identical to replaying the exported map on the original 2nd01.png
+    - a 100,000-swap seeded run on the same 24-image package finishes with joint score 2384008426 and a bijective candidate map; this is a search-progress checkpoint, not a recovered key
+    - two 1,000-swap batches with the first map and prior attempt count reproduce one continuous 2,000-swap run on both original challenge images and the full 24-image package
+    - the original challenge directory contains 64 second-round encrypted PNGs; a package containing all 64 fits the one-megabyte budget, and a resumed batch on index 63 reproduces its continuous 2,000-swap candidate and map
+    - a 100,000-swap batch on all 64 images improves the score; a cancellation signal interrupts a longer in-progress search between swap batches
+    - an explicit identity map reproduces every decoded pixel of original 2nd00.png; a two-position swap changes the output and inverse replay restores the original samples without modifying the source
+    - the source-published recovered.key reproduces all 4096 RGBA pixels in challenge/recovered/2nd00.png from the original encrypted player image; this is a known-map replay oracle, not recovered-key evidence
+    - a separate 100,000-attempt seeded search on all 64 player images has 0 of 4096 positions equal to the source-published map (the identity starting map has 1); score improvement at this checkpoint does not establish key recovery
+fixture:
+  usable: true
+  inputs:
+    - src/formats/testing/google-ctf-2024-otp-2nd00.png
+    - src/formats/testing/google-ctf-2024-otp-2nd01.png
+    - src/formats/testing/google-ctf-2024-otp-pair.zip
+    - src/formats/testing/google-ctf-2024-otp-24.zip
+    - src/formats/testing/google-ctf-2024-otp-64.zip
+    - src/formats/testing/google-ctf-2024-otp-source-recovered.key
+    - src/formats/testing/google-ctf-2024-otp-source-recovered-2nd00.png
+  test: src/formats/pixelPermutation.test.ts
+  license: Apache-2.0
+  licenseFile: corpus/LICENSE.google-ctf.apache-2.0.txt
+  attribution: Copyright 2024 Google LLC; original Google CTF encrypted-image challenge attachments.
+  provenance: The two source-published replay-oracle files come from the challenge source, not the player attachments; see src/formats/testing/google-ctf-2024-otp-source-oracle.provenance.md.

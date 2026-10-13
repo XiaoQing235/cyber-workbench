@@ -1,0 +1,45 @@
+id: google-ctf-2019-sc
+title: sc
+event: Google CTF 2019 Finals
+category: network
+sourceUrl: https://github.com/google/google-ctf/tree/main/2019/finals/misc-sc
+author: Google CTF
+inputFormats:
+  - original sc.pcapng capture with Ethernet 802.3 LLC/IPX StarCraft Storm packets
+steps:
+  - operationId: pcap.storm-pylons
+    originalTool: tshark data.data export and Python bitmap reconstruction
+    originalCommand: select Storm game build packets for pylon ID 0x9c, plot their little-endian x and y coordinates on a 256x256 bitmap
+    inputs:
+      - sc.pcapng from the official challenge attachments
+    outputs:
+      - 256x256 pylon map image
+      - 62 matching packets and 61 distinct coordinates
+    workbenchCondition: The exact bitmap matches an independent Scapy reproduction of the published solver; the operation reports flagRecovered false because the flag wrapper is inferred from the challenge convention.
+    additionalEvidence: The plotted points form five x-separated groups (including a four-point marker away from the main line). Bounding boxes and per-group point counts are reported without assigning letters.
+  - operationId: pcap.storm-pylons
+    originalTool: visual bitmap inspection (Workbench exact sparse-glyph reading)
+    originalCommand: read the letters traced by the plotted pylons
+    inputs:
+      - reconstructed bitmap
+    outputs:
+      - glyph text 6Pool from the original capture's sparse point map
+      - convention-wrapped candidate CTF{6Pool}, matching the released flag
+    workbenchCondition: Five exact sparse glyphs are recognized and the separate four-point marker is counted. The regression checks the original capture's pixels and operation candidate against the independently published README flag; altering or removing a glyph point makes the reading unavailable. The capture does not itself attest to the CTF wrapper.
+verification:
+  pattern: '^CTF\{6Pool\}$'
+  intermediate:
+    - The original 1679492-byte pcapng contains 16827 frames.
+    - The archived solver's predicate selects 62 build packets with 61 unique in-bounds pylon positions.
+    - The 256x256 raw bitmap SHA-256 is f3f77df0822913b0bf2ac1e520e25f2cd80b804355dee1b243f50b9117680965.
+    - The five x-separated bounding groups have left/right extents 114–116, 145–155, 161–167, 171–186 and 198–202; their 4+20+12+18+7 unique points sum to 61.
+    - Splitting the 171–186 group at its empty columns yields two o glyphs; the readout 6Pool matches the official README's CTF{6Pool} when convention-wrapped.
+fixture:
+  usable: true
+  inputs:
+    - src/formats/testing/google-ctf-2019-sc.pcapng
+  test: src/operations/labs.test.ts
+  license: Apache-2.0
+  licenseFile: corpus/LICENSE.google-ctf.apache-2.0.txt
+  attribution: Copyright 2019 Google LLC; original Google CTF 2019 Finals sc capture and solution.
+  provenance: The capture is byte-identical to the official player attachment (SHA-256 b40b193e219d78121b10aa1ce1ac1c0061fc4a4ac78f75c36c48a7b6768c2baa). The bitmap golden was computed independently with Scapy using the archived solver's byte offsets; the expected flag is from the official challenge README, not supplied to the reader.

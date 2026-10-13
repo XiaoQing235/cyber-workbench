@@ -1,0 +1,50 @@
+id: google-ctf-2025-filtermaze
+title: filtermaze
+event: Google CTF 2025 Qualifiers
+category: crypto
+sourceUrl: https://github.com/google/google-ctf/tree/main/2025/quals/crypto-filtermaze
+author: Google CTF
+inputFormats:
+  - JSON directed adjacency graph (graph.json)
+  - public LWE parameters (lwe_pub_params.json)
+  - JSON-line check_path and get_flag service requests
+steps:
+  - operationId: crypto.graph.hamiltonian-candidate
+    originalTool: static analysis of the provided graph and Python path checker
+    originalCommand: search graph.json for a candidate route visiting each node once, following directed edges
+    inputs:
+      - graph.json
+    outputs:
+      - 30 nodes and 122 directed edges
+      - a Hamiltonian candidate starting at node 0 after 39,430 bounded states
+    workbenchCondition: The candidate is graph-valid but is not known to match the service's hidden exact path.
+  - operationId: null
+    originalTool: check_path service oracle (provided filtermaze.py)
+    originalCommand: submit JSON candidate prefixes and use valid_prefix, path_incorrect or path_complete to identify the server's hidden path
+    inputs:
+      - graph candidate and the live challenge service
+    outputs:
+      - server-selected path and absolute LWE error magnitudes
+    workbenchGap: The real server's secret path and oracle answers are not in the published graph. M6 does not query live challenge services.
+  - operationId: null
+    originalTool: LWE cryptanalysis
+    originalCommand: recover the hidden key from public A, b, q and the oracle's error magnitudes, then call get_flag
+    inputs:
+      - lwe_pub_params.json
+      - server-provided absolute error values
+    outputs:
+      - LWE secret and final flag
+    workbenchGap: Offline LWE key recovery with signed error choices is not implemented; the graph fixture cannot verify this step or the flag.
+verification:
+  pattern: '^CTF\{d4_sup3r_sh0rt_3rr0r_v3ct0r_1s_th3_k3y\}$'
+  intermediate:
+    - a candidate path visits 30 distinct nodes and every consecutive edge exists in graph.json
+    - bounded search uses 39,430 explored states in published adjacency order
+fixture:
+  usable: true
+  inputs:
+    - src/formats/testing/google-ctf-2025-filtermaze-graph.json
+  test: src/formats/hamiltonian.test.ts
+  license: Apache-2.0
+  licenseFile: corpus/LICENSE.google-ctf.apache-2.0.txt
+  attribution: Copyright 2025 Google LLC; original Google CTF graph attachment.

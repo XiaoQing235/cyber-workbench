@@ -1,0 +1,61 @@
+id: google-ctf-2023-zip-hard
+title: ZIP (hard variant)
+event: Google CTF 2023 Qualifiers
+category: crypto
+sourceUrl: https://github.com/google/google-ctf/tree/main/2023/quals/crypto-ziphard
+author: Google CTF
+inputFormats:
+  - two-entry traditional ZipCrypto archive (hard.zip)
+  - Python ZIP generator (hard.py)
+steps:
+  - operationId: archive.zip.inspect
+    originalTool: unzip -Z -v
+    originalCommand: unzip -Z -v hard.zip
+    inputs:
+      - hard.zip
+    outputs:
+      - junk.dat is an encrypted stored four-byte file with CRC-32 3b3953bc
+      - flag.txt is an encrypted stored 50-byte file with CRC-32 4712d99a
+  - operationId: archive.zip.crc32-preimage4
+    originalTool: crackcrc.c (official solution)
+    originalCommand: crackcrc 3b3953bc 0 ffffffff
+    inputs:
+      - junk.dat size and CRC-32 from the ZIP central directory
+    outputs:
+      - four-byte plaintext e2f2ba77 for junk.dat
+    workbenchCondition: CRC-32 gives a unique preimage for exactly four bytes; it does not decrypt flag.txt or reveal ZipCrypto keys.
+  - operationId: null
+    originalTool: patched bkcrack 1.5.0
+    originalCommand: bkcrack-patched -c flag.txt -C hard.zip -x 0 efbbbf4354467b -x 49 7d, with recovered junk.dat plaintext as an additional key filter
+    inputs:
+      - hard.zip
+      - known UTF-8 BOM and CTF{ prefix plus final } in flag.txt
+      - recovered junk.dat bytes and its encrypted header
+    outputs:
+      - shared ZipCrypto keys 7796d1ea 96defd9f d7043705
+    workbenchGap: The bundled bkcrack operation requires 12 contiguous known bytes in one entry; this puzzle has eight contiguous bytes plus evidence from a second entry and needs the upstream patched cracker.
+  - operationId: archive.zip.extract-keys
+    originalTool: bkcrack --change-keys and unzip
+    originalCommand: decrypt flag.txt using internal keys 7796d1ea 96defd9f d7043705 recovered by the patched attack
+    inputs:
+      - hard.zip
+      - independently recovered internal keys
+    outputs:
+      - 50-byte CRC-verified plaintext with a UTF-8 BOM
+      - flag after stripping the BOM
+    workbenchCondition: Requires the three supplied keys; the app validates the encrypted header, output size and CRC but cannot derive the keys for this case.
+verification:
+  pattern: '^CTF\{y0u_u5ed_3xtr@_pl@1nt3xt_t0_d3t3rm1n3_k3ys\}$'
+  intermediate:
+    - junk.dat is four bytes with CRC-32 3b3953bc and its encrypted data begins at offset 38
+    - recovered junk.dat plaintext is e2f2ba77
+    - a separate patched attack finds shared ZipCrypto keys
+    - supplied keys decrypt original flag.txt to the published flag with exact size and CRC
+fixture:
+  usable: true
+  inputs:
+    - src/formats/testing/google-ctf-2023-ziphard.zip
+  test: src/operations/archive.test.ts
+  license: Apache-2.0
+  licenseFile: corpus/LICENSE.google-ctf.apache-2.0.txt
+  attribution: Copyright 2023 Google LLC; original Google CTF challenge archive.

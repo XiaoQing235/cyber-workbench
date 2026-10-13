@@ -1,0 +1,59 @@
+id: google-ctf-2023-primes
+title: Primes
+event: Google CTF 2023 Qualifiers
+category: crypto
+sourceUrl: https://github.com/google/google-ctf/tree/main/2023/quals/crypto-primes
+author: Google CTF
+inputFormats:
+  - original Sage chal.sage attachment with a scrambled 7-bit message and 1524-bit published q/x constants
+steps:
+  - operationId: crypto.primes.message-recover
+    originalTool: Sage modular product encoding
+    originalCommand: encode the scrambled 7-bit message as y using the same indexed small-prime product as chal.sage
+    inputs:
+      - scrambled challenge message
+      - published q and prime sequence
+    outputs:
+      - modular encoding y
+    workbenchCondition: The original attachment includes the scrambled message on its m = b"..." line. The bounded operation computes y from that string and checks modular invertibility.
+  - operationId: crypto.primes.message-recover
+    originalTool: Sage modular inversion
+    originalCommand: compute e = x * inverse_mod(y, q) mod q
+    inputs:
+      - published x and q
+      - scrambled-message encoding y
+    outputs:
+      - modular error ratio e/q
+    workbenchCondition: The operation computes e from the original attachment's q, x and embedded message; no separate service input is required.
+  - operationId: crypto.rational.continued-fraction
+    originalTool: Sage continued fractions
+    originalCommand: expand e/q into convergents for candidate factors; the standalone continued-fraction fixture also exercises x/q
+    inputs:
+      - exact decimal numerator and denominator
+    outputs:
+      - bounded exact Euclidean quotients and convergents for independently supplied numerator and denominator
+    workbenchCondition: The existing first twelve x/q convergents match independent arithmetic; the message-recovery operation separately tests 381 e/q convergents to reach the correctable one.
+  - operationId: crypto.primes.message-recover
+    originalTool: Sage small-prime factoring
+    originalCommand: factor candidate convergent denominators and residues, correct bit errors, then reconstruct the message
+    inputs:
+      - convergents of e/q
+      - indexed small-prime sequence
+    outputs:
+      - recovered released flag
+    workbenchCondition: The indexed prime factors of the convergent denominator and residue identify 135 changed bits. Re-encoding the recovered message exactly equals the attachment's x and the candidate flag matches the published event flag. Re-encoding is a check of this candidate, not a proof of uniqueness.
+verification:
+  pattern: '^CTF\{w0W_c0Nt1nUed_fr4Ct10ns_suR3_Ar3_fUn_Huh\}$'
+  intermediate:
+    - published q and x each require 1524-bit exact integer arithmetic
+    - x/q begins with convergents 0/1, 1/1, 2/3, 5/7 and 7/10
+    - convergent index 380 of e/q recovers the released flag after 135 indexed bit corrections and exact re-encoding
+fixture:
+  usable: true
+  inputs:
+    - src/formats/testing/google-ctf-2023-primes-chal.sage
+  test: src/formats/primesMessage.test.ts
+  license: Apache-2.0
+  licenseFile: corpus/LICENSE.google-ctf.apache-2.0.txt
+  attribution: Copyright 2023 Google LLC; original Google CTF Sage challenge attachment.
+  provenance: The script's embedded scrambled message differs from the released flag. The bounded recovery derives the released flag from that string and the published q/x, without supplying the expected flag to the solver.

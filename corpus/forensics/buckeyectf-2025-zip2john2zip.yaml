@@ -1,0 +1,50 @@
+id: buckeyectf-2025-zip2john2zip
+title: zip2john2zip
+event: BuckeyeCTF 2025
+category: forensics
+sourceUrl: https://ctftime.org/writeup/40488
+author: NEMO1337
+inputFormats:
+  - zip2john $pkzip2$ text record
+steps:
+  - operationId: archive.zip.password-test
+    originalTool: John the Ripper
+    originalCommand: john hash.txt --wordlist=rockyou.txt
+    inputs:
+      - zip2john hash line
+      - local dictionary
+    outputs:
+      - password factfinder
+    workbenchCondition: Restore the inline hash as a ZIP first, then test bounded password candidates against its encrypted entry; unlike John this is not a hash-only cracker and the step order changes.
+  - operationId: archive.zip.hash-restore
+    originalTool: custom Python ZIP reconstruction script
+    originalCommand: build_the_zip.py hash.txt restored.zip
+    inputs:
+      - PKZIP2 hash metadata and encrypted data blob
+    outputs:
+      - restored.zip with a local file entry and central directory
+    workbenchCondition: Only a single-entry inline ZipCrypto $pkzip2$ record with the original entry name and stored/deflated encrypted bytes is supported; the published challenge hash has not been redistributed or tested.
+  - operationId: archive.zip.inspect
+    originalTool: unzip
+    originalCommand: inspect the reconstructed archive entry before extraction
+    inputs:
+      - restored.zip
+    outputs:
+      - encrypted flag.txt entry metadata
+  - operationId: archive.zip.extract
+    originalTool: unzip
+    originalCommand: unzip -P factfinder restored.zip
+    inputs:
+      - restored.zip
+      - recovered password
+    outputs:
+      - flag.txt
+    workbenchCondition: Requires the known password, restored archive and selected entry index; plaintext is returned only after CRC verification.
+verification:
+  pattern: '^bctf\{[^}]+\}$'
+  intermediate:
+    - recovered ZIP password factfinder
+    - reconstructed archive contains an encrypted flag.txt entry
+fixture:
+  usable: false
+  reason: The public write-up contains challenge hash data but gives no redistribution licence for it or the challenge files.
