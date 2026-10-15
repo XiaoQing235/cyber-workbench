@@ -68,6 +68,12 @@ describe("OCR pack", () => {
     const prefix = await ocr(crop.image, { layout: "line", scale: 2 });
     expect(prefix.error).toBeUndefined();
     expect(prefix.text).toBe("CTF{");
+    const { colorContrastStrip } = await import("../formats/colorContrast");
+    const strip = await colorContrastStrip(new MemorySource(decoded.png), 940, 678, 80, 22, 60);
+    const suffix = await ocr(strip.image, { layout: "line", whitelist: "0123456789abcdefghijklmnopqrstuvwxyz" });
+    expect(suffix.error).toBeUndefined();
+    // Record the engine's ambiguous glyph honestly; do not replace it from the known answer.
+    expect(suffix.text.replace(/\s/g, "")).toBe("5mdll3r");
   });
 
 });

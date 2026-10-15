@@ -67,7 +67,7 @@ describe("M2 challenge flows", () => {
     expect(best.message).toContain("flag{vertical_slice}");
     expect(new TextDecoder().decode(await bytesOf(await follow(decoded, best.id, extracted)))).toBe("flag{vertical_slice}");
     expect(challenge).toEqual(original);
-  });
+  }, 30_000);
 
   it("BMP whose height hides the rows carrying an LSB flag", async () => {
     const [width, height] = [16, 16];

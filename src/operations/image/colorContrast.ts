@@ -1,7 +1,7 @@
 import { OperationError } from "../../core/operation/errors";
 import { defineOperation } from "../../core/operation/types";
 import { bytesFrom, structuredValue } from "../../core/value";
-import { colorContrastCrop } from "../../formats/colorContrast";
+import { colorContrastCrop, colorContrastStrip } from "../../formats/colorContrast";
 import { bytesInput, MiB } from "../util";
 
 export const colorContrastIsolate = defineOperation<{ left: number; top: number; width: number; height: number; threshold: number }>({
@@ -27,6 +27,26 @@ export const colorContrastIsolate = defineOperation<{ left: number; top: number;
       ctx.diagnostic(`${coloredPixels} chromatic pixel(s) in the selected ${params.width}×${params.height} region; recognition requires a separate OCR or visual check.`);
       return { image: bytesFrom(image), report: structuredValue({ coloredPixels, width: params.width, height: params.height,
         threshold: params.threshold, textRecovered: false }) };
+    } catch (error) {
+      ctx.throwIfAborted();
+      throw new OperationError("INVALID_INPUT", error instanceof Error ? error.message : String(error));
+    }
+  },
+});
+
+export const colorContrastTextStrip = defineOperation<{ left: number; top: number; width: number; height: number; threshold: number }>({
+  spec: {
+    ...colorContrastIsolate.spec,
+    id: "image.color-contrast.text-strip",
+    title: "Arrange coloured text as a strip",
+    description: "Isolate chromatic pixels in a crop, group nearby rows and columns, and arrange the regions left-to-right for visual inspection or OCR. Region coordinates retain source-image evidence; no characters are guessed. Closely spaced lines or disconnected glyphs may require separate crops.",
+  },
+  async run(ctx, inputs, params) {
+    try {
+      const { image, regions } = await colorContrastStrip(bytesInput(inputs), params.left, params.top,
+        params.width, params.height, params.threshold, ctx.signal);
+      return { image: bytesFrom(image), report: structuredValue({ regions, textRecovered: false,
+        ordering: "row bands then columns", maxScale: 3, maxRegionHeight: 40, aspectRatioPreserved: true }) };
     } catch (error) {
       ctx.throwIfAborted();
       throw new OperationError("INVALID_INPUT", error instanceof Error ? error.message : String(error));

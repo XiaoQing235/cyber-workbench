@@ -45,7 +45,7 @@ import { agePassphraseDecrypt } from "./crypto/agePassphrase";
 import { npcPasswordsDiscover } from "./crypto/npcDiscovery";
 import { npcHintVerify } from "./crypto/npcHint";
 import { continuedFractionExpand } from "./crypto/continuedFraction";
-import { colorContrastIsolate } from "./image/colorContrast";
+import { colorContrastIsolate, colorContrastTextStrip } from "./image/colorContrast";
 import { symatrixDecode } from "./image/symatrix";
 import { primesMessageRecover } from "./crypto/primesMessage";
 import { sshPrivateKeyInspect, sshPrivateKeyJohnExport } from "./crypto/ssh";
@@ -190,6 +190,7 @@ export const builtinOperations: readonly OperationDefinition[] = [
   agePassphraseDecrypt,
   continuedFractionExpand,
   colorContrastIsolate,
+  colorContrastTextStrip,
   symatrixDecode,
   primesMessageRecover,
   lcgUnknownRecover,

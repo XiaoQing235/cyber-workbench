@@ -1,0 +1,3 @@
+# Preserve fixture bytes, including original line endings and binary payloads.
+src/formats/testing/** -text
+corpus/** -text

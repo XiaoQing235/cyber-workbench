@@ -57,6 +57,7 @@ verification:
     - decoded RGB pixels match the supplied image and Google's reference decoder exactly
     - decoding leaves the supplied PNG2 input bytes unchanged, as checked by SHA-256 before and after reconstruction
     - a color-contrast crop followed by offline OCR reads the CTF{ prefix, but not the complete flag
+    - image.color-contrast.text-strip compacts thresholded chromatic regions with absolute source-image rectangles; the suffix crop x=940,y=678,width=80,height=22,threshold=60 yields OCR candidate 5mdll3r, not the published 5m4ll3r, so complete text acceptance remains open
 fixture:
   usable: true
   inputs:

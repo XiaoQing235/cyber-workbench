@@ -1,5 +1,22 @@
 # M6 status
 
+## Follow-up validation (2026-10-16)
+
+The chromatic text-strip renderer now fits tall regions proportionally instead of squashing only their height. Regressions cover tall-region dimensions and rejection of more than 256 regions before output allocation. `npm test` passes 634 tests in 100 files; `npm run build` passes both typechecks and production bundling; the full three-browser E2E rerun passes 113 tests with the same seven WebKit offline-pack skips. PNG2 full-text acceptance and the other M6 gaps remain open.
+
+## Validation baseline (2026-10-15, Windows / Node 24.21.0)
+
+After portable registry URLs, byte-preserving fixture attributes, Windows-safe Python test paths and explicit expensive-test timeouts were applied:
+
+- `npm ci` succeeds with the existing locked versions and integrity hashes.
+- `npm run build` passes both TypeScript checks and the production build. Bundle-size and browser-externalization warnings remain.
+- `npm test`: 99 files, 629 tests passed, with no skips or unhandled errors.
+- `npx playwright test`: 113 passed, 7 skipped across Chromium, Firefox and WebKit. The skips remain the existing WebKit offline-pack execution checks; this is not proof of WebKit offline support.
+
+Fixture hash assertions were retained. Checkout-converted fixtures were restored to their exact committed bytes, not regenerated or assigned new expected hashes. This baseline does not close the capability, corpus or distribution gaps below.
+
+`.github/workflows/ci.yml` now defines Node 24 install/typecheck/unit/build checks on Windows and Linux plus a Linux Chromium/Firefox/WebKit E2E job with downloadable reports. Hosted execution has not yet been verified. `CONTRIBUTING.md` documents local validation, fixture preservation and the existing WebKit limitation.
+
 Reference: `design.md` §5.2 and §6.2. This is a gap inventory, not an acceptance sign-off. The corpus has 17 attributed challenge YAML records, 14 with usable licensed fixtures; independently published format vectors live under `src/formats/testing/`. The M6 exit criterion requires each lab to reproduce its challenge corpus fixtures, and many lab families have no attributed challenge fixture yet.
 
 The existing M6 additions include narrow readers and locally generated conformance vectors. A passing test on a generated vector does not establish support for every real-world variant of that format. The mail, EVTX, registry hive, ESE, Prefetch and Hayabusa JSONL vectors under `src/formats/testing/` provide independent real-file evidence, but do not satisfy any missing CTF challenge exit checks. The next acceptance work should prioritize independently produced fixtures and end-to-end challenge results over more header-only inventories.
@@ -9,6 +26,8 @@ Google CTF 2019 `sc` now has an original-capture regression from packet bytes th
 Google CTF 2023 `Primes` now recovers the published flag from the original Sage attachment's embedded scrambled message and q/x constants: 381 bounded convergents, 135 indexed bit corrections, and exact re-encoding to x. This closes its earlier missing-message claim; the operation reports a verified candidate encoding, not mathematical uniqueness of the message.
 
 Google CTF 2023 `Symatrix` now reconstructs all 272 mirrored-pixel bits from the original PNG and yields the published flag as an independently checked candidate. The operation does not take a flag or known text as input.
+
+PNG2 acceptance follow-up: `image.color-contrast.text-strip` now arranges chromatic regions into a bounded black-on-white strip with absolute source-image rectangles. It is a reusable visual/OCR preprocessing operation, not a flag decoder. The original reproduced PNG2 suffix crop (940,678,80,22; threshold 60) produces OCR candidate `5mdll3r` rather than the published `5m4ll3r`; no known-answer correction is applied. Row-band grouping can merge adjacent lines and disconnected glyphs may split. Complete flag recovery remains open. The expanded PNG2 pack-free UI flow passes Chromium, Firefox and WebKit; the full unit suite now passes 632 tests in 100 files, and the production build passes. Other browser flows were not rerun for this follow-up.
 
 Google CTF 2023 `NPC` now discovers the published passphrase from the original `hint.dot` and full `USACONST.TXT` dictionary without taking it as input. The bounded search is non-exhaustive, but authenticating up to 16 of its candidates against the original 215-byte `secret.age` yields `CTF{S3vEn_bR1dg35_0f_K0eN1g5BeRg}` at scrypt work factor 19. The full dictionary-to-decryption chain passes as one pack-free operation in Chromium, Firefox and WebKit, as well as an original-fixture unit regression.
 

@@ -40,7 +40,7 @@ describe("Google CTF 2023 PNG2 image reconstruction", () => {
     if (operation.outputs.data?.type !== "bytes") throw new Error("Expected reconstructed PNG artifact");
     expect(await readAll(operation.outputs.data.source)).toEqual(png);
     expect(createHash("sha256").update(reproduced).digest("hex")).toBe(inputSha);
-  });
+  }, 30_000);
 
   it("rejects a damaged PNG2 marker, invalid chunk CRC and missing file tail", async () => {
     const damaged = reproduced.slice();

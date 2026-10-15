@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { loadPyodide } from "pyodide";
 import { beforeAll, describe, expect, it } from "vitest";
 import type { Bytes } from "../core/bytes/ByteSource";
@@ -11,7 +12,7 @@ import { createDefaultRegistry } from "./index";
 const registry = createDefaultRegistry();
 
 beforeAll(async () => {
-  const engine = await createEngine(loadPyodide, new URL("../../node_modules/pyodide/", import.meta.url).pathname);
+  const engine = await createEngine(loadPyodide, fileURLToPath(new URL("../../node_modules/pyodide/", import.meta.url)));
   setPythonRunner(async (script, input) => engine.run(script, input));
 }, 60_000);
 

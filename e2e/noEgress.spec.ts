@@ -120,8 +120,8 @@ test("Burp XML comparison stays local and returns no request payload", async ({ 
   await page.locator('main input[type="file"]').setInputFiles({ name: "responses.xml", mimeType: "application/xml", buffer: Buffer.from(responseXml) });
   await page.getByRole("combobox", { name: "Headers from" }).selectOption("response");
   await page.getByRole("button", { name: "Run", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Running…" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Run", exact: true })).toBeVisible();
+  // Fast operations can finish before Playwright observes the transient running state.
+  await expect(page.locator("main pre").last()).toContainText('"x-trace"');
   const responseReport = JSON.parse(await page.locator("main pre").last().innerText()) as { changed: { header: string; baselineValues: number; candidateValues: number }[] };
   expect(responseReport.changed).toMatchObject([{ header: "x-trace", baselineValues: 2, candidateValues: 1 }]);
   expect(JSON.stringify(responseReport)).not.toMatch(/PRIVATE|SECRET|200 OK/);
@@ -304,7 +304,8 @@ test("original NPC graph and full word list discover password candidates locally
 });
 
 test("original NPC graph and age file recover the flag in one local run", async ({ page, context }) => {
-  test.setTimeout(90_000);
+  // Up to 16 scrypt authentications can take longer when browser projects run together.
+  test.setTimeout(180_000);
   const packFiles: string[] = [];
   await context.route("**/assets/pack-*", async (route) => {
     packFiles.push(route.request().url());
@@ -317,7 +318,7 @@ test("original NPC graph and age file recover the flag in one local run", async 
   await page.getByRole("button", { name: "Search NPC graph dictionary" }).click();
   await page.locator("main textarea").first().fill(JSON.stringify({ hint, dictionary, ageCiphertextHex }));
   await page.getByRole("button", { name: "Run", exact: true }).click();
-  await expect(page.getByText("success", { exact: true })).toBeVisible({ timeout: 70_000 });
+  await expect(page.getByText("success", { exact: true })).toBeVisible({ timeout: 160_000 });
   const report = JSON.parse(await page.locator("main pre").last().innerText()) as { truncated: boolean; flagVerified: boolean;
     age: { authenticated: boolean; attempts: number; passphrase: string; utf8Candidate: string } };
   expect(report.truncated).toBe(true);
@@ -362,6 +363,18 @@ test("PNG2 reconstructed pixels yield a local colour-isolated prefix", async ({ 
   await page.getByRole("button", { name: "Run", exact: true }).click();
   await expect(page.getByRole("button", { name: "Run", exact: true })).toBeVisible();
   await expect(page.getByText("success", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: /Decode PNG2 image → data bytes/ }).click();
+  await page.getByRole("button", { name: "Arrange coloured text as a strip" }).click();
+  await page.getByRole("spinbutton", { name: "Left pixel" }).fill("940");
+  await page.getByRole("spinbutton", { name: "Top pixel" }).fill("678");
+  await page.getByRole("spinbutton", { name: "Crop width" }).fill("80");
+  await page.getByRole("spinbutton", { name: "Crop height" }).fill("22");
+  await page.getByRole("spinbutton", { name: "RGB contrast threshold" }).fill("60");
+  await page.getByRole("button", { name: "Run", exact: true }).click();
+  await expect(page.locator("main pre").last()).toContainText('"row bands then columns"');
+  const strip = JSON.parse(await page.locator("main pre").last().innerText()) as { regions: unknown[]; textRecovered: boolean };
+  expect(strip.regions.length).toBeGreaterThan(0);
+  expect(strip.textRecovered).toBe(false);
   await page.getByRole("button", { name: /Decode PNG2 image → data bytes/ }).click();
   await page.getByRole("button", { name: "Isolate coloured image region" }).click();
   await page.getByRole("spinbutton", { name: "Left pixel" }).fill("320");

@@ -166,7 +166,7 @@ describe("LCG-derived RSA reconstruction", () => {
       iterations: 13_047, primeConfidence: "probable", publicExponent: "65537", rsaModulus: publicModulus,
     } });
     expect(result.outputs.plaintext).toMatchObject({ type: "text", text: "CTF{C0nGr@tz_RiV35t_5h4MiR_nD_Ad13MaN_W0ulD_b_h@pPy}" });
-  });
+  }, 30_000);
 
   it("enforces search limits and exact decimal or ciphertext input", async () => {
     await expect(reconstructLcgRsa(sample, 16, 2, 10)).rejects.toThrow(/found .* probable primes within 10/);

@@ -22,7 +22,7 @@ describe("age scrypt passphrase decryption", () => {
     expect(operation.outputs.report).toMatchObject({ type: "structured", data: { authenticated: true, workFactor: 19,
       utf8Candidate: "CTF{S3vEn_bR1dg35_0f_K0eN1g5BeRg}", flagVerified: false } });
     expect(operation.run.diagnostics.join(" ")).not.toContain(publishedPassphrase);
-  });
+  }, 30_000);
 
   it("rejects unsupported or excessive work before key derivation", async () => {
     const tooCostly = original.slice();
@@ -40,5 +40,5 @@ describe("age scrypt passphrase decryption", () => {
       inputs: { data: bytesValue(new MemorySource(original)) }, params: { passphrase: "incorrect-passphrase" } });
     expect(operation.run.status).toBe("failed");
     expect(operation.outputs.plaintext).toBeUndefined();
-  });
+  }, 30_000);
 });
